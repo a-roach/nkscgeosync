@@ -231,17 +231,17 @@ fn main()
 
 
 
-/** check_if_there_isnt_already_location_data_in
-  fn check_if_there_isnt_already_location_data_in(file: &PathBuf) -> bool
+/** check_if_this_is_already_in
+  fn check_if_this_is_already_in(file: &PathBuf, this: &str) -> bool
     file: &PathBuf = path to an nksc file
 
-  Takes a fully qualified path as a parameter and returns true if the file has GPS data in it,
+  Takes a fully qualified path as a parameter and returns true if the file has "this" in it,
   and false if it does not. I' sure there is an easier way to write this since it is basically a
   single line function, but off the top of my head I can't quite remember how.
 **/
-fn check_if_there_isnt_already_location_data_in(file: &PathBuf) -> bool
+fn check_if_this_is_already_in(file: &PathBuf, this: &str) -> bool
 {
- if (fs::read_to_string(file).expect("Could not open nksc file to check its contents").find("GPSLatitude rdf:parseType")!=None)
+ if (fs::read_to_string(file).expect("Could not open nksc file to check its contents").find(this)==None)
    {
      return false;
    }
@@ -501,7 +501,7 @@ fn create_new_nksc_file(file: &Path, Location: &mut LocationData, i_want_to_save
   fr.read_to_string(&mut nksc).expect("Unable to read from the file");
   drop(fr);
 
-  let idx = nksc.find("</rdf:Description>").expect("Could not find a vlad XML tag to hook in to."); // find the end of the nksc XML data, where we will insert our new fragment
+  let idx = nksc.find("</rdf:Description>").expect("Could not find a valid XML tag to hook in to."); // find the end of the nksc XML data, where we will insert our new fragment
 
   if (idx>0)
     {
@@ -706,7 +706,7 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
 
     if let Some((w, _h)) = term_size::dimensions() 
       {
-        column_width=(w-2)/2;
+        column_width=(w-10)/2;
       } 
 
   /*
@@ -730,14 +730,14 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
             * that data and update the nksc file with the data from the exif tag in the NEF.
             */
 
-          let there_isnt_location_data_in_nksc:bool = check_if_there_isnt_already_location_data_in(&nksc_Path.to_path_buf());
+          let there_is_location_data_in_nksc:bool = check_if_this_is_already_in(&nksc_Path.to_path_buf(),"GPSLatitude rdf:parseType");
           let there_is_location_data_in_nef:bool = check_if_there_is_location_data_in(&nef_path);
 
-          if there_isnt_location_data_in_nksc
+          if there_is_location_data_in_nksc==false
             {
               if (there_is_location_data_in_nef)||(i_want_to_see_everything)
                   {
-                  print!("{}  ",Colour::Yellow.on(Colour::Red).paint(fit_name_in(&nksc_path,column_width)));
+                    print!("Geo:  {}  ",Colour::Yellow.on(Colour::Red).paint(fit_name_in(&nksc_path,column_width)));
                   }
 
               if there_is_location_data_in_nef
@@ -750,7 +750,7 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
                       create_new_nksc_file(&nksc_Path,&mut Location, i_want_to_save_the_original_file);
 
                       for _i in 0..(column_width*2)+2 {print!("\x08")}; // Erase the contents of the line from the screen
-                      println!("{}  {}",Colour::Blue.on(Colour::Green).paint(fit_name_in(&nksc_path,column_width)),Colour::Blue.on(Colour::Green).paint(fit_name_in(&nef,column_width)));
+                      println!("Geo:  {}  {}",Colour::Blue.on(Colour::Green).paint(fit_name_in(&nksc_path,column_width)),Colour::Blue.on(Colour::Green).paint(fit_name_in(&nef,column_width)));
                     }
                   else
                     {
@@ -770,7 +770,7 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
             {
               if (!there_is_location_data_in_nef)||(i_want_to_see_everything)
                 {
-                  print!("{}  ",Colour::Blue.on(Colour::Green).paint(fit_name_in(&nksc_path,column_width)));
+                  print!("Geo:  {}  ",Colour::Blue.on(Colour::Green).paint(fit_name_in(&nksc_path,column_width)));
                   get_location_data_from_exif(&nef_path,&mut Location);
                   if there_is_location_data_in_nef
                     {
@@ -823,6 +823,8 @@ fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_w
       let mut nksc_path:String=format!("{:?}\\\\NKSC_PARAM\\\\{:?}.nksc",nef_path.parent().unwrap(), nef_path.file_name().unwrap());
       nksc_path=nksc_path.replace("\\\\","\\").replace("\"","");
       let nksc_Path=Path::new(&nksc_path);
+      let mut nksc_PathBuf=PathBuf::new();
+      nksc_PathBuf.push(nksc_Path);
       let mut go_astro:bool = false;
       let mut go_best_quality:bool = false;
       let mut go_edge:bool = false;
@@ -831,7 +833,7 @@ fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_w
         {
           if astro==true
             {
-              if is_what_already_set_in(nksc_Path,"NoiseReduction.chkSpike\"&gt;1&lt;")
+              if check_if_this_is_already_in(&nksc_PathBuf,"NoiseReduction.chkSpike\"&gt;1&lt;")
                 {
                   if i_want_to_see_everything
                     {
@@ -847,7 +849,7 @@ fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_w
 
           if best_quality==true
             {
-              if is_what_already_set_in(nksc_Path,"NoiseReduction.cbMethod\"&gt;1&lt;")
+              if check_if_this_is_already_in(&nksc_PathBuf,"NoiseReduction.cbMethod\"&gt;1&lt;")
                 {
                   if i_want_to_see_everything
                     {
@@ -863,7 +865,7 @@ fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_w
           
           if edge==true
             {
-              if is_what_already_set_in(nksc_Path,"NoiseReduction.chkEdge\"&gt;1&lt;")
+              if check_if_this_is_already_in(&nksc_PathBuf,"NoiseReduction.chkEdge\"&gt;1&lt;")
                 {
                   if i_want_to_see_everything
                     {
@@ -933,24 +935,3 @@ fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_w
     }
 }
 
-/** is_what_already_set_in
-  fn is_what_already_set_in(file: &Path, what: &str) -> bool
-   file: &Path = path to an sidecar file
-   what: &str = string to look for in the sidecar file to see if it is set
-
-  Takes a fully qualified path as a parameter and returns true if the file has a matching string inside of it
-**/
-fn is_what_already_set_in(file: &Path, what: &str) -> bool
-{
-  let mut fr = File::open(file).expect(format!("Could not open {:?}",file.file_name()).as_str());
-  let mut body = String::new();
-
-  fr.read_to_string(&mut body).expect("Unable to read from the file");
-  drop(fr);  
-
-  if body.contains(what)
-    {
-      return true;
-    }
-  false
-}
