@@ -1,0 +1,21 @@
+[package]
+name = "nkscgeosync"
+version = "0.0.10"
+authors = ["Andrew Roach <aroach@geocities.com>"]
+edition = "2018"
+description = "Program to extract location data from NEF files and insert it to nikon sidecar files."
+license = "GPL-2.0-or-later"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ansi_term = "*"
+kamadak-exif = "0.5"
+data-encoding="*"
+quit="*"
+term_size ="*"
+wild = "*"
+
+[build-dependencies]
+chrono = "0.4.7"
