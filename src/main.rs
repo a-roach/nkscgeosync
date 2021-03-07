@@ -48,7 +48,7 @@ macro_rules! verbose
 
 // Global Variables
 
-static mut VERBOSE:bool=false;                                                  // Used to tell us if we are going to be verbose
+static mut VERBOSE:bool=false;                                                 // Used to tell us if we are going to be verbose
 const VERSION_STRING: &'static str = env!("VERSION_STRING");
 
 fn main()
@@ -81,8 +81,8 @@ fn main()
         if (argument == "-?")||
            (argument =="-h")
            {
-              println!("{}","Program to insert location data stored in an NEF into the NKSC_PARAM if it is missing.\n\
-                        \nUSAGE:\n\
+              println!("{}","Program to insert location data stored in an NEF into the NKSC_PARAM sidecar files if it is missing and set some noise reduction options en-mass.\n\
+                       \nUSAGE:\n\
                         \x20  nkscgeosync [OPTIONS] [<file names>]\n\
                         \nOPTIONS:\n\
                         \x20  -v              Verbose\n\
@@ -93,17 +93,20 @@ fn main()
                         \x20  --edge          Set \"Edge Noise Reduction\" to \"On\".\n\
                         \x20  --noback        Do not back up the original file\n\
                         \x20  --nosync        Only show the NKSC file which are out of sync with NEF files.\n\
-                        \x20  --nogeo         Don't execute the geosync code (i.e. do only --astro and/or --best).\n\
+                        \x20  --nogeo         Don't execute the geosync code (i.e. do only --astro and/or --best etc.).\n\
                         \x20  -d <dir name>   Specify a directory to search, or additional directories to search.\n\
                         \x20                  If none are specified the current directory is used.\n\
                         \x20  -e              Change the extension to search on.\n\
                         \x20                  By default .NEF is used, but this could be changed to .JPG if desired.\n\
+                        \n\nNOTES:\
                         \nCommand line parameters can not be compounded, but can be specified individually, e.g. \"-vrl\" won't work, but \"-v -r -l\" will.\
+                        \nRunning the program without any parameters will execute it in the current directory with default settings (geosync, backup).\
+                        \n\nDisplay colours:\
                         ");
 
-              println!("\n{}",Colour::Yellow.on(Colour::Red).paint("Yellow writing with a red background means there is no location data."));
-              println!("{}",Colour::Blue.on(Colour::Green).paint("Blue writing with a green background means there is location data."));
-              println!("{}",Colour::Black.on(Colour::Yellow).paint("Black on Yellow indicates a file is being processed."));
+              println!("{}{}",Colour::Yellow.on(Colour::Red).paint("Yellow writing with a red background")," means there is no location data or a noise reduction option is unset.");
+              println!("{}{}",Colour::Blue.on(Colour::Green).paint("Blue writing with a green background")," means there is location data or a noise reduction item is set.");
+              println!("{} indicates a file is being processed, though it is highly unlikely you will ever see this.",Colour::Black.on(Colour::Yellow).paint("Black on Yellow "));
 
               quit::with_code(0);
            }
@@ -192,7 +195,7 @@ fn main()
 
           if astro==true || best_quality==true || edge==true
             {  
-              set_astro_or_best_on_in_a_file(&path, &search_extension, i_want_to_save_changes,i_want_to_save_the_original_file,i_want_to_see_everything, astro, best_quality,edge);
+              set_noise_reduction_in_a_file(&path, &search_extension, i_want_to_save_changes,i_want_to_save_the_original_file,i_want_to_see_everything, astro, best_quality,edge);
             }
         }
     }
@@ -483,7 +486,7 @@ fn get_location_data_from_exif(file: &Path, LocationData: &mut LocationData)
 /** create_new_nksc_file
   fn create_new_nksc_file(file: &Path, LocationData: &mut LocationData)
 
-    file: &Path = path to the NKSC file we wish to amend
+    file: &Path = path to the sidecar file we wish to amend
     LocationData: &mut LocationData = pointer to a structure with our location data in it
 
   Function will open up an existing nksc file and insert into it the update location data.
@@ -661,7 +664,7 @@ fn WalkDirectory(WhichDirectory: &PathBuf, search_extension: &str, recursive: bo
               
               if (astro==true || best_quality==true || edge==true)
                 {
-                  set_astro_or_best_on_in_a_file(&nef_path.path().to_path_buf(), search_extension, i_want_to_save_changes,
+                  set_noise_reduction_in_a_file(&nef_path.path().to_path_buf(), search_extension, i_want_to_save_changes,
                                                   i_want_to_save_the_original_file,i_want_to_see_everything, astro, best_quality, edge);
                 }
             }
@@ -783,8 +786,8 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
     }
 }
 
-/**  set_astro_or_best_on_in_a_file
-  fn set_astro_or_best_on_in_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_changes: bool, i_want_to_save_the_original_file: bool, 
+/**  set_noise_reduction_in_a_file
+  fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_changes: bool, i_want_to_save_the_original_file: bool, 
                                     i_want_to_see_everything: bool,astro: bool, best_quality: bool)
 
     nef_path = path to file 
@@ -796,9 +799,9 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
     best_quality = change the noise reduction from fastest to best quality
     edge = set edge noise reduction to on
 
-  Function which processes an individual file settings its astro flag or best quality flag for noise reduction
+  Function which processes an individual file settings its astro, edge, or best quality flag for noise reduction
 */
-fn set_astro_or_best_on_in_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_changes: bool, i_want_to_save_the_original_file: bool, 
+fn set_noise_reduction_in_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_changes: bool, i_want_to_save_the_original_file: bool, 
                                   i_want_to_see_everything: bool, astro: bool, best_quality: bool, edge: bool)
 {
   let mut column_width:usize = 39;
