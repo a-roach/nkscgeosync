@@ -68,4 +68,11 @@ will parse `c:\test_data`, finding any files which don't have the edge noise red
 `nkscgeosync wedding*.nef --astro --best`  
 will search the current directory for all files matching `wedding*.nef`, syncing location data if necessary, finding any files which don't have astro noise reduction set and at the same time it will set the noise reduction from fastest to best.
 
+## License
+Copyright © 2021 Andrew Roach. All rights reserved.
 
+GNU General Public License version 3
+
+nkscgeosync is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+nkscgeosync is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
