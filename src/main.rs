@@ -1,3 +1,12 @@
+/*
+ * nkscgeosync
+ * A program to sync location data from Nikon .NEF files to Nikon sidecar (NKSC) files when it is missing. 
+ * As a bonus, the program also lets you set various noise reduction settings en-mass.
+ * 
+ * If you look at the code, please be a little kind - it literally is my first Rust program, and I've mostly come from a C world so there are probably 
+ * a lot of stylistic hangovers from this, not least of which is my default code formatting which is pretty much straight gnu C style and most definitely not Rust.
+ */
+
 // Compiler options
 
 #![allow(unused_parens)]
@@ -11,6 +20,7 @@ use std::fs::File;
 use std::path::{Path,PathBuf};
 use std::io::{BufReader,Write};
 use std::io::prelude::*;
+use std::ffi::OsStr;
 
 use data_encoding::BASE64_NOPAD;
 use data_encoding::BASE64;
@@ -670,7 +680,7 @@ fn WalkDirectory(WhichDirectory: &PathBuf, search_extension: &str, recursive: bo
             }
           else // Directory
             {
-              if (recursive == true)
+              if (recursive == true) && (nef_path.path().file_stem() != Some(OsStr::new("NKSC_PARAM")))
                 {
                   verbose!("DIR: {}", nef_path.path().display());
                   WalkDirectory(&nef_path.path().to_path_buf(), search_extension, recursive, i_want_to_save_changes,i_want_to_save_the_original_file,
