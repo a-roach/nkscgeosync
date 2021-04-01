@@ -19,7 +19,7 @@ fn main() {
     println!("cargo:rustc-env=VERSION_STRING={}", version_string);
  
     fs::write("makepack.bat",
-    format!("strip \\target\\release\\nkscgeosync.exe\
+    format!("strip target\\release\\nkscgeosync.exe\
             \n\"C:\\Program Files\\7-Zip\\7z.exe\" a {0}_{1}_{2}_{3}.zip LICENSE README.md\
             \ncd target\\release\
             \n\"C:\\Program Files\\7-Zip\\7z.exe\" a ..\\..\\{0}_{1}_{2}_{3}.zip nkscgeosync.exe\

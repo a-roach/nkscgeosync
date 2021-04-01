@@ -25,6 +25,7 @@ use std::ffi::OsStr;
 use data_encoding::BASE64_NOPAD;
 use data_encoding::BASE64;
 use ansi_term::Colour;
+use ansi_term::Style;
 use exif::{ In, Value, Tag};
 
 // Define Structures
@@ -71,7 +72,7 @@ fn main()
   let mut astro:bool=false;                                                    // Turn on astro noise reduction
   let mut best_quality:bool=false;                                             // Change the noise reduction from Fastest to Best
   let mut edge:bool=false;                                                     // Enable edge noise reduction  
-  let mut enable_geo_sync:bool=true;                                           // Process the geo location data 
+  let mut enable_geo_sync:bool=false;                                           // Process the geo location data 
   let args: Vec<String> = wild::args().collect();                              // Command line arguments
   let mut file_names = Vec::new();                                             // File name pointers   
   let mut directory_names = Vec::new();                                        // Directory name pointers
@@ -91,28 +92,32 @@ fn main()
         if (argument == "-?")||
            (argument =="-h")
            {
-              println!("{}","Program to insert location data stored in an NEF into the NKSC_PARAM sidecar files if it is missing and set some noise reduction options en-mass.\n\
-                       \nUSAGE:\n\
+              println!("Program to insert location data stored in an NEF into the NKSC_PARAM sidecar files if it is missing and set some noise reduction options en-mass.\n\
+                       \n{}\n\
                         \x20  nkscgeosync [OPTIONS] [<file names>]\n\
-                        \nOPTIONS:\n\
+                        \n{}\n\
                         \x20  -v              Verbose\n\
                         \x20  -r              Recursively search sub-directories\n\
                         \x20  -l              Look for NEF/NKSC files but do not sync them - just print the results to the screen.\n\
                         \x20  --astro         Set \"Astro Noise Reduction\" to \"On\".\n\
                         \x20  --best          Set noise reduction to \"Best\".\n\
                         \x20  --edge          Set \"Edge Noise Reduction\" to \"On\".\n\
+                        \x20  --geo           Execute the geosync code.\n\
                         \x20  --noback        Do not back up the original file\n\
                         \x20  --nosync        Only show the NKSC file which are out of sync with NEF files.\n\
-                        \x20  --nogeo         Don't execute the geosync code (i.e. do only --astro and/or --best etc.).\n\
                         \x20  -d <dir name>   Specify a directory to search, or additional directories to search.\n\
                         \x20                  If none are specified the current directory is used.\n\
                         \x20  -e              Change the extension to search on.\n\
                         \x20                  By default .NEF is used, but this could be changed to .JPG if desired.\n\
-                        \n\nNOTES:\
+                        \n\n{}\
                         \nCommand line parameters can not be compounded, but can be specified individually, e.g. \"-vrl\" won't work, but \"-v -r -l\" will.\
                         \nRunning the program without any parameters will execute it in the current directory with default settings (geosync, backup).\
-                        \n\nDisplay colours:\
-                        ");
+                        \n\n{}\
+                        ",
+                        Style::new().bold().paint("USAGE:"),
+                        Style::new().bold().paint("OPTIONS:"),
+                        Style::new().bold().paint("NOTES:"),
+                        Style::new().bold().paint("Display colours:"));
 
               println!("{}{}",Colour::Yellow.on(Colour::Red).paint("Yellow writing with a red background")," means there is no location data or a noise reduction option is unset.");
               println!("{}{}",Colour::Blue.on(Colour::Green).paint("Blue writing with a green background")," means there is location data or a noise reduction item is set.");
@@ -141,6 +146,10 @@ fn main()
            {
              edge = true;
            }
+        else if (argument == "--geo")
+           {
+             enable_geo_sync = true;
+           }
         else if (argument == "--noback")
            {
              i_want_to_save_the_original_file = false;
@@ -148,10 +157,6 @@ fn main()
         else if (argument == "--nosync")
            {
              i_want_to_see_everything = false;
-           }
-        else if (argument == "--nogeo")
-           {
-             enable_geo_sync = false;
            }
         else if (argument == "-l")
            {
@@ -187,6 +192,22 @@ fn main()
         i+=1;
       }
   }
+
+  /* 
+   * Sanity test - see if we have provided something on the command line which will do something
+   */
+
+   if (enable_geo_sync==false) && (edge==false) && (astro==false) && (best_quality ==false)
+    {
+      println!("No valid command line option seem to have be given. At least try one of {}, {}, {} or {}. \nType {} for more help.",
+                Style::new().italic().bold().paint("--geo"),
+                Style::new().italic().bold().paint("--astro"),
+                Style::new().italic().bold().paint("--best"),
+                Style::new().italic().bold().paint("--edge"),
+                Style::new().italic().bold().paint("nkscgeosync -?")
+              );
+      quit::with_code(2);        
+    }
 
 
   /*
@@ -238,7 +259,6 @@ fn main()
                     astro,best_quality,edge);
     }
 }
-
 
 
 /** check_if_this_is_already_in
