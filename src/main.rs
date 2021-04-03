@@ -170,7 +170,7 @@ fn main()
         else if (argument == "-e")
            {
              i+=1;
-             search_extension = ".".clone().to_owned()+&argument.clone().to_lowercase();
+             search_extension = ".".clone().to_owned()+&args[i].clone().to_lowercase();
            }
         else
           {
