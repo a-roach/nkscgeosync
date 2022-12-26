@@ -1,6 +1,6 @@
 [package]
 name = "nkscgeosync"
-version = "1.4.0"
+version = "1.5.0"
 authors = ["Andrew Roach <afr69email-Github@yahoo.com>"]
 edition = "2018"
 description = "Program to extract location data from NEF files and insert it to nikon sidecar files."

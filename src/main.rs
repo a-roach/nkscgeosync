@@ -523,13 +523,14 @@ fn get_location_data_from_exif(file: &Path, LocationData: &mut LocationData)
   Although the nksc is an XML file and I could probably have used an XML library for writing the data, it is such a basic and small file format
   that we are just going to open it up into memory and make the changes there then save it back to disk.
 **/
-fn create_new_nksc_file(file: &Path, Location: &mut LocationData, i_want_to_save_the_original_file: bool)
+fn create_new_nksc_file(file: &Path, Location: &mut LocationData, i_want_to_save_the_original_file: bool, there_is_a_GPSVersionID_in_nksc: bool)
 {
   let mut fr = File::open(file).expect("Could not open file.");
   let mut nksc = String::new();
 
   fr.read_to_string(&mut nksc).expect("Unable to read from the file");
   drop(fr);
+
 
   let idx = nksc.find("</rdf:Description>").expect("Could not find a valid XML tag to hook in to."); // find the end of the nksc XML data, where we will insert our new fragment
 
@@ -539,11 +540,7 @@ fn create_new_nksc_file(file: &Path, Location: &mut LocationData, i_want_to_save
         {
           if (nksc.chars().nth(i)==Some('\n'))
             {
-              let mut xml:String=format!("\n         <ast:GPSVersionID rdf:parseType=\"Resource\">\n\
-                                          \x20           <rdf:value>AgIAAA==</rdf:value>\n\
-                                          \x20           <astype:Type>Binary</astype:Type>\n\
-                                          \x20        </ast:GPSVersionID>\n\
-                                          \x20        <ast:GPSLatitudeRef rdf:parseType=\"Resource\">\n\
+              let mut xml:String=format!("\n        <ast:GPSLatitudeRef rdf:parseType=\"Resource\">\n\
                                           \x20           <rdf:value>{}</rdf:value>\n\
                                           \x20           <astype:Type>Long</astype:Type>\n\
                                           \x20        </ast:GPSLatitudeRef>\n\
@@ -594,6 +591,14 @@ fn create_new_nksc_file(file: &Path, Location: &mut LocationData, i_want_to_save
                                         \x20           <rdf:value>{}</rdf:value>\n\
                                         \x20           <astype:Type>Double</astype:Type>\n\
                                         \x20        </ast:GPSTimeStamp>",Location.GPSTimeStamp));
+                }
+                
+              if there_is_a_GPSVersionID_in_nksc==false
+                {
+                  xml.push_str("\n         <ast:GPSVersionID rdf:parseType=\"Resource\">\n\
+                                       \x20           <rdf:value>AgIAAA==</rdf:value>\n\
+                                       \x20           <astype:Type>Binary</astype:Type>\n\
+                                       \x20        </ast:GPSVersionID>");
                 }
 
               nksc.insert_str(i+1,&xml);
@@ -761,6 +766,7 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
             */
 
           let there_is_location_data_in_nksc:bool = check_if_this_is_already_in(&nksc_Path.to_path_buf(),"GPSLatitude rdf:parseType");
+          let there_is_a_GPSVersionID_in_nksc:bool = check_if_this_is_already_in(&nksc_Path.to_path_buf(),"GPSVersionID");
           let there_is_location_data_in_nef:bool = check_if_there_is_location_data_in(&nef_path);
 
           if there_is_location_data_in_nksc==false
@@ -777,7 +783,7 @@ fn geo_sync_a_file(nef_path: &PathBuf, search_extension: &str, i_want_to_save_ch
                       print!("{}",Colour::Black.on(Colour::Yellow).paint(fit_name_in(&nef,column_width)));
 
                       get_location_data_from_exif(&nef_path,&mut Location);
-                      create_new_nksc_file(&nksc_Path,&mut Location, i_want_to_save_the_original_file);
+                      create_new_nksc_file(&nksc_Path,&mut Location, i_want_to_save_the_original_file,there_is_a_GPSVersionID_in_nksc );
 
                       for _i in 0..(column_width*2)+2 {print!("\x08")}; // Erase the contents of the line from the screen
                       println!("Geo:  {}  {}",Colour::Blue.on(Colour::Green).paint(fit_name_in(&nksc_path,column_width)),Colour::Blue.on(Colour::Green).paint(fit_name_in(&nef,column_width)));
